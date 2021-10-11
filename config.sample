@@ -1,0 +1,16 @@
+## General Defaults
+# PUBLIC=false
+
+## GitHub
+# GITHUB_TOKEN=*access_token*
+
+## GitLab
+# GITLAB_TOKEN=*access_token*
+# GITLAB_URL=gitlab.com
+
+## Codeberg
+# CODEBERG_TOKEN=*access_token*
+
+## GITEA
+# GITEA_TOKEN=*access_token*
+# GITEA_URL=gitea.com
