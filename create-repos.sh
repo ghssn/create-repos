@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# Copyright (C) 2021 Ghassan Alduraibi
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+
 CONFIG_FILE=$(dirname $(realpath $0))/config
 test -f $CONFIG_FILE && source $CONFIG_FILE
 usage() {
@@ -117,13 +124,12 @@ createGitlab() {
 }
 # mirrorGit "github" [[ $GITHUB_USER ]] [[ $GITHUB_URL ]]
 mirrorGit() {
-  exec git remote add --mirror ${1} git@[[ ${3} ]]:[[ ${2} ]]/[[ $REPO_NAME ]].git
+  exec git remote add --mirror ${1} git@[[ ${3} ]]:[[ ${2} ]]/$REPO_NAME.git
   echo "exec git push --quiet ${1} &" >> .git/hooks/post-receive
   chmod 755 .git/hooks/post-receive
 }
 # addOrigin $GIT_USER $GIT_URL
 addOrigin() {
-  echo "git remote add origin git@${2}:${1}/"$REPO_NAME".git"
   exec git remote add origin git@${2}:${1}/$REPO_NAME.git
 }
 
