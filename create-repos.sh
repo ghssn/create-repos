@@ -5,6 +5,7 @@ test -f $CONFIG_FILE && source $CONFIG_FILE
 usage() {
   echo "Usage: git-repo [ -n    | --name   NAME  ]
                 [ -d    | --description DESC ]
+                [ -o    | --origin       ]
                 [ -p    | --public       ]
                 [ -P    | --private      ]
                 [ -h    | --help         ]
@@ -14,6 +15,7 @@ usage() {
                 [ --gh  | --github       ]
                 [ --gl  | --gitlab       ]
                 # Set config
+                [ --codeberg_user  USER  ]
                 [ --codeberg_token TOKEN ]
                 [ --gitea_token    TOKEN ]
                 [ --gitea_url      URL   ]
@@ -27,6 +29,8 @@ setDefaults() {
   REPO_NAME=$(basename $(pwd))
   PUBLIC=${PUBLIC:-false}
   BRANCH=${BRANCH:-"main"}
+  CODEBERG_URL="codeberg.org"
+  GITHUB_URL="github.com"
   GITLAB_URL=${GITLAB_URL:-"gitlab.com"}
   ALL=true
   CODEBERG=false
@@ -111,11 +115,22 @@ createGitlab() {
   # already exists: "409 Conflict"
   # authentication failed: "401 Unauthorized"
 }
+# mirrorGit "github" [[ $GITHUB_USER ]] [[ $GITHUB_URL ]]
+mirrorGit() {
+  exec git remote add --mirror ${1} git@[[ ${3} ]]:[[ ${2} ]]/[[ $REPO_NAME ]].git
+  echo "exec git push --quiet ${1} &" >> .git/hooks/post-receive
+  chmod 755 .git/hooks/post-receive
+}
+# addOrigin $GIT_USER $GIT_URL
+addOrigin() {
+  echo "git remote add origin git@${2}:${1}/"$REPO_NAME".git"
+  exec git remote add origin git@${2}:${1}/$REPO_NAME.git
+}
 
 
 setDefaults
 
-PARSED_ARGUMENTS=$(getopt -a -n git-repo -o n:d:pPh --long name:,description:,public,private,\help,gh,github,gl,gitlab,cb,codeberg,gitea,github_token:,gitlab_token:,gitlab_url:,codeberg_token:,gitea_token:,gitea_url:,always_public:,always_private: -- ${@})
+PARSED_ARGUMENTS=$(getopt -a -n git-repo -o n:d:opPh --long name:,description:,origin,public,private,\help,gh,github,gl,gitlab,cb,codeberg,gitea,github_token:,gitlab_token:,gitlab_url:,codeberg_user:,codeberg_token:,gitea_token:,gitea_url:,always_public:,always_private: -- ${@})
 VALID_ARGUMENTS=$?
 if [ "$VALID_ARGUMENTS" != "0" ]; then
   usage
@@ -128,9 +143,10 @@ while :
 do
   case "$1" in
     -n   | --name)     REPO_NAME="$2"  ; shift 2 ;;
+    -d   | --description)  DESCRIPTION="$2"  ; shift 2 ;;
+    -o   | --origin)   SET_ORIGIN=true ; shift   ;;
     -p   | --public)   PUBLIC=true     ; shift   ;;
     -P   | --private)  PUBLIC=false    ; shift   ;;
-    -d   | --description)  DESCRIPTION="$2"  ; shift 2 ;;
     -h   | --help)     HELP=true       ; shift   ;;
     --gh | --github)   GITHUB=true     ; shift   ;;
     --gl | --gitlab)   GITLAB=true     ; shift   ;;
@@ -139,6 +155,7 @@ do
     --github_token)    GITHUB_TOKEN="$2"   ; CONF=true; shift 2 ;;
     --gitlab_token)    GITLAB_TOKEN="$2"   ; CONF=true; shift 2 ;;
     --gitlab_url)      GITLAB_URL="$2"     ; CONF=true; shift 2 ;;
+    --codeberg_user)   CODEBERG_USER="$2"  ; CONF=true; shift 2 ;;
     --codeberg_token)  CODEBERG_TOKEN="$2" ; CONF=true; shift 2 ;;
     --gitea_token)     GITEA_TOKEN="$2"    ; CONF=true; shift 2 ;;
     --gitea_url)       GITEA_URL="$2"      ; CONF=true; shift 2 ;;
@@ -168,6 +185,9 @@ if [ $CONF ]; then
   fi
   if [ $GITLAB_TOKEN ]; then
     setConfig "GITLAB_URL" $GITLAB_URL
+  fi
+  if [ $CODEBERG_USER ]; then
+    setConfig "CODEBERG_USER" $CODEBERG_USER
   fi
   if [ $CODEBERG_TOKEN ]; then
     setConfig "CODEBERG_TOKEN" $CODEBERG_TOKEN
@@ -224,4 +244,12 @@ fi
 if $GITLAB && [[ $GITLAB_TOKEN ]]; then
   createGitlab $GITLAB_TOKEN $GITLAB_URL
   echo "Request sent to GitLab"
+fi
+
+# Add remote origin (git init if not already)
+if $SET_ORIGIN  && [[ $CODEBERG_USER ]]; then
+  if [ ! -d ./.git ]; then
+    exec git init
+  fi
+  addOrigin $CODEBERG_USER $CODEBERG_URL
 fi

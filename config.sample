@@ -1,5 +1,6 @@
 ## General Defaults
 # PUBLIC=false
+# MIRROR_MSG=" [ mirrored from codeberg.org/ghassan ]"
 
 ## GitHub
 # GITHUB_TOKEN=*access_token*
@@ -10,6 +11,7 @@
 
 ## Codeberg
 # CODEBERG_TOKEN=*access_token*
+# CODEBERG_USER=ghassan
 
 ## GITEA
 # GITEA_TOKEN=*access_token*
